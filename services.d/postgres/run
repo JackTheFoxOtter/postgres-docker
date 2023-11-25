@@ -1,0 +1,10 @@
+#!/command/with-contenv sh
+
+# Start Postgres
+echo "Starting Postgres..."
+mkdir -p /var/lib/postgresql/data
+/usr/local/bin/docker-entrypoint.sh postgres || echo "Postgres exited with error!"
+
+# When Postgres stops, stop the container
+echo "Postgres stopped, taking down container..."
+/run/s6/basedir/bin/halt

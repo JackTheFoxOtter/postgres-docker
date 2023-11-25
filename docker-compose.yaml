@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  postgres:
+    build: .
+    user: ${CURRENT_UID:-1000}:${CURRENT_GID:-1000}
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      - "PGDATA=/var/lib/postgresql/data/pgdata"
+      - "POSTGRES_USER=${POSTGRES_USER}"
+      - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+      - "HOST=${HOST}"
+      - "PORT=${PORT}"
+      - "QUART_ENV=${QUART_ENV}"
+      - "SECRET_KEY=${SECRET_KEY}"
+    shm_size: 2gb
+    volumes:
+      - "./data/postgres:/var/lib/postgresql/data/"
+      - "./data/backups:/backups"

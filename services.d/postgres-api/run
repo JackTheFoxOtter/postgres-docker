@@ -1,0 +1,11 @@
+#!/command/with-contenv sh
+
+# Start the API
+if [ $QUART_ENV == "Development" ]
+then
+    echo "Starting app in debug mode..."
+    python -u /api/run_debug.py --debug
+else
+    echo "Starting app in production mode..."
+    python -u /api/run_production.py
+fi

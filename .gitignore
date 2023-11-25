@@ -6,6 +6,13 @@ __pycache__/
 # C extensions
 *.so
 
+# Ignore application data
+data/*
+
+# Never ignore directory create files
+!.create
+
+
 # Distribution / packaging
 .Python
 build/
