@@ -42,10 +42,10 @@ loop.set_debug(IS_DEBUG) # Set asyncio event loop debug mode when launched in de
 #=====================================================================#
 #--------------------------- [Core Routes] ---------------------------#
 #=====================================================================#
-@app.route('/')
-async def home():
+@app.route('/ping')
+async def ping():
     """
     Internal redirect to home page
 
     """
-    return 'ABC'
+    return 'pong'

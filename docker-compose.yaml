@@ -14,7 +14,8 @@ services:
       - "PORT=${PORT}"
       - "QUART_ENV=${QUART_ENV}"
       - "SECRET_KEY=${SECRET_KEY}"
+      - "PYTHONUNBUFFERED=1"
     shm_size: 2gb
     volumes:
-      - "./data/postgres:/var/lib/postgresql/data/"
-      - "./data/backups:/backups"
+      - "./data/postgres:/var/lib/postgresql/data/:rw"
+      - "./data/backups:/backups:rw"
