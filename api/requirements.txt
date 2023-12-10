@@ -1,3 +1,6 @@
 # Core
 Hypercorn==0.14.4
 Quart==0.19.3
+
+# IO
+pathvalidate==3.2.0

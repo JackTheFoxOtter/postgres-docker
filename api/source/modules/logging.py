@@ -1,4 +1,4 @@
-from ..env import IS_DEBUG
+from source.env import IS_DEBUG
 from typing import Any
 import logging
 import sys
