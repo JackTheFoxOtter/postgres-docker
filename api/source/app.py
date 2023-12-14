@@ -2,8 +2,11 @@
 #------------------------ [Initialize logging] -----------------------#
 #=====================================================================#
 from source.modules.logging import setup_logging, get_logger
+from source.modules.utils import get_timestamped_filename
+import os
 
-setup_logging()
+log_file_path = os.path.join('/logs', get_timestamped_filename('postgres_api', 'log'))
+setup_logging(log_file_path)
 
 logger = get_logger('postgres_api.core')
 

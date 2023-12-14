@@ -1,5 +1,5 @@
 from source.env import IS_DEBUG
-from typing import Any
+from typing import Any, Union
 import logging
 import sys
 import os
@@ -327,7 +327,7 @@ def get_handler():
     return handler
 
 
-def setup_logging() -> None:
+def setup_logging(file_path: Union[str, None], file_log_level:int = logging.INFO) -> None:
     """
     Function to setup logging configuration. Should only be called once at startup.
 
@@ -345,6 +345,13 @@ def setup_logging() -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO) # Default to info for all loggers, we don't want to debug third party packages
     root_logger.addHandler(get_handler())
+
+    if file_path:
+        # Also set up file logger
+        file_handler = logging.FileHandler(file_path)
+        file_handler.setLevel(file_log_level)
+        file_handler.setFormatter(_CustomFormatter())
+        root_logger.addHandler(file_handler)
 
     # Handle uncaught exceptions with logger as well
     def _handle_uncaught_exception(exc_type : Any, exc_value : Any, exc_traceback : Any) -> None:
