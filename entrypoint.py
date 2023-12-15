@@ -15,6 +15,7 @@ to proceed depending on configuration. Usually that means restarting the contain
 from asyncio import StreamReader, create_subprocess_shell
 from asyncio.subprocess import PIPE
 import asyncio
+import os
 
 
 async def print_lines_continuously(process_name : str, pipe_name : str, reader : StreamReader):
@@ -79,7 +80,7 @@ async def main():
         # Start supervised processes
         await asyncio.gather(
             start_supervised_process("Postgres", '/usr/local/bin/docker-entrypoint.sh postgres', restart=False, critical=True),
-            start_supervised_process("QuartAPI", 'python -u /api/run_debug.py --debug', restart=True, critical=False),
+            start_supervised_process("QuartAPI", 'python -u /api/run_debug.py --debug' if os.getenv('QUART_ENV') == 'Development' else 'python -u /api/run_production.py', restart=True, critical=False),
         )
         print(f"All processes have ended without indication of error.")
         exit(0)

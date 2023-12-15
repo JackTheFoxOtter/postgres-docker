@@ -26,6 +26,28 @@ services:
       - "./data/postgres:/var/lib/postgresql/data/:rw"
       - "./data/backups:/backups:rw"
       - "./data/logs:/logs:rw"
-    # Debug port forwarding for testing of Rest API
+    networks:
+      - "pgadmin"
     ports:
-      - 5001:5000
+      - "5432:${POSTGRES_PORT}"
+      - "5001:5000" # Debug port forwarding for testing of Rest API
+  
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin4
+    restart: no
+    profiles:
+      - pgadmin
+    environment:
+      - "PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}"
+      - "PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}"
+    volumes:
+      - "${PGADMIN_ROOT}/pgadmin:/var/lib/pgadmin"
+    networks:
+      - "pgadmin"
+    ports:
+      - "8080:80"
+
+networks:
+  pgadmin:
+    external: false
