@@ -9,6 +9,7 @@ import os
 
 # Configure logging. Sets up custom log level 'notice', custom formatters & root logger
 setup_logging(os.path.join(PATH_LOGS, get_timestamped_filename('postgres_api', 'log')))
+logging.getLogger("asyncio").setLevel(logging.WARNING)
 # logging.logAsyncioTasks = False # TODO: Available in Python 3.12, so once the alpine package registry upgrades, we can uncomment this!
 
 
@@ -51,7 +52,7 @@ from source.modules.utils import filename_validator
 from werkzeug.exceptions import InternalServerError
 
 @app.post("/echo")
-@api_method(sanitize_arguments=False)
+@api_method(do_sanitize_arguments=False)
 async def echo_post(request_data : dict):
     return 200, { "input": request_data }
 

@@ -23,9 +23,9 @@ async def try_create_backup(database : str, backup_name : str) -> Tuple[bool, st
             raise Exception(f"Unsupported scheme in connection URL: '{scheme}'")
         
         dbname = os.path.join(DB_CONN_SYNC, database)
-        backup_file_name = get_unique_filename(PATH_BACKUPS, get_timestamped_filename(backup_name, scheme))
+        backup_file_name = get_unique_filename(PATH_BACKUPS, get_timestamped_filename(f"{database}_{backup_name}", f"{scheme}.gz"))
         backup_file_path = os.path.join(PATH_BACKUPS, backup_file_name)
-        if await execute_subprocess_shell(logger, 'pg_dump', f'pg_dump --dbname="{dbname}" > "{backup_file_path}"') > 0:
+        if await execute_subprocess_shell(logger, 'pg_dump', f'pg_dump --dbname="{dbname}" | gzip > "{backup_file_path}"') > 0:
             raise Exception("Subprocess returncode does not indicate success!")
 
         logger.info(f"Successfully completed database backup '{backup_name}'! (-> '{backup_file_path}')")
@@ -54,18 +54,17 @@ async def try_restore_backup(database : str, backup_name : str) -> bool:
             raise Exception("Failed to create temporary restoration database!")
 
         logger.info(f"Database restore 2/4: Populating 'tempdb' from backup '{backup_name}'...")
-        if await execute_subprocess_shell(logger, 'psql', f'psql \'tempdb\' -U postgres < \'{os.path.join(PATH_BACKUPS, backup_name)}\'') > 0:
+        if await execute_subprocess_shell(logger, 'psql', f'gunzip < \'{os.path.join(PATH_BACKUPS, backup_name)}\' | psql \'tempdb\' -U postgres') > 0:
             raise Exception("Failed to populate temporary restoration database from backup file! (Is the file corrupt?)")
 
-        db_name = os.path.basename(PARSED_DB_CONN.path)
-        logger.info(f"Database restore 3/4: Dropping '{db_name}'...")
-        if await execute_subprocess_shell(logger, 'dropdb', f'dropdb \'{db_name}\' --force --if-exists -U postgres') > 0:
-            raise Exception(f"Failed to drop database '{db_name}'!")
+        logger.info(f"Database restore 3/4: Dropping '{database}'...")
+        if await execute_subprocess_shell(logger, 'dropdb', f'dropdb \'{database}\' --force --if-exists -U postgres') > 0:
+            raise Exception(f"Failed to drop database '{database}'!")
         
-        logger.info(f"Database restore 4/4: Renaming 'tempdb' -> '{db_name}'...")
-        rename_sql = f'ALTER DATABASE "tempdb" RENAME TO "{db_name}";'
+        logger.info(f"Database restore 4/4: Renaming 'tempdb' -> '{database}'...")
+        rename_sql = f'ALTER DATABASE "tempdb" RENAME TO "{database}";'
         if await execute_subprocess_shell(logger, 'psql', f'psql \'postgres\' -U postgres -c \'{rename_sql}\'') > 0:
-            raise Exception(f"Failed to rename 'tmpdb' to '{db_name}'! THIS MEANS NO DATABASE CALLED '{db_name}' CURRENTLY EXISTS!")
+            raise Exception(f"Failed to rename 'tmpdb' to '{database}'! THIS MEANS NO DATABASE CALLED '{database}' CURRENTLY EXISTS!")
         
         logger.info(f"Successfully restored database from backup '{backup_name}'!")
         return True

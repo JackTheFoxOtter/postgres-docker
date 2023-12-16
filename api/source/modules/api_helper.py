@@ -30,20 +30,23 @@ def sanitize_arguments(argument_rules : dict, arguments : dict):
     
     Possible argument rules:
     'optional' (bool):
-        Specifies wether this argument is required. If it is, AssertionError will be raised when it's missing.
+        Specifies wether this argument is required. If it is, ArgumentSanitizationError will be raised when it's missing.
+    'allowed_types' (list[type]):
+        List of allowed type.
+        If specified, ArgumentSanitizationError will be raised if the provided type doesn't match the list of allowed types.
     'transformer' (callable):
         A callable that will be invoked on the value for this argument.
     'validator' (callable):
         A callable that will be invoked on the value for this argument (after transformer if provided).
         Callable should raise ArgumentValidationError with a message provided as validation error reason if the argument isn't acceptable.
-    'allowed_values' (list):
+    'allowed_values' (list[Any]):
         List of allowed values.
-        If specified, AssertionError will be raised if the value (after transformer if provided) isn't in the list of allowed values.
+        If specified, ArgumentSanitizationError will be raised if the value (after transformer if provided) isn't in the list of allowed values.
     'arguments' (dict):
         List of nested argument rules.
 
     """
-    def sanitize_argument_recursive(root_element: dict, argument_rule : dict, argument_name: str, path: List[str], obj: dict):
+    def _sanitize_argument_recursive(root_element: dict, argument_rule : dict, argument_name: str, path: List[str], obj: dict):
         rule_optional = argument_rule.get('optional', None)
         rule_allowed_types = argument_rule.get('allowed_types', None)
         rule_transformer = argument_rule.get('transformer', None)
@@ -51,7 +54,7 @@ def sanitize_arguments(argument_rules : dict, arguments : dict):
         rule_allowed_values = argument_rule.get('allowed_values', None)
         rule_arguments = argument_rule.get('arguments', None)
 
-        # If argument is required but not provided, raise AssertionError
+        # If argument is required but not provided, raise ArgumentSanitizationError
         # If argument is optional and not provided, return
         if argument_name not in root_element.keys():
             if rule_optional: return
@@ -80,7 +83,7 @@ def sanitize_arguments(argument_rules : dict, arguments : dict):
                 argument_path = '.'.join(path)
                 raise ArgumentSanitizationError(f"Validation for argument '{argument_name}' at '{argument_path}' failed: {str(ex)}")
         
-        # If allowed values list is specified but argument value isn't on it, raise AssertionError
+        # If allowed values list is specified but argument value isn't on it, raise ArgumentSanitizationError
         if rule_allowed_values and argument_value not in rule_allowed_values:
             argument_path = '.'.join(path)
             allowed_values = ', '.join([ f"'{v}'" for v in rule_allowed_values ])
@@ -90,7 +93,7 @@ def sanitize_arguments(argument_rules : dict, arguments : dict):
             # Add empty dict to target object and process all specified sub-arguments recursively
             obj[argument_name] = {}
             for sub_argument_name, sub_argument_rule in rule_arguments.items():
-                sanitize_argument_recursive(argument_value, sub_argument_rule, sub_argument_name, path + [argument_name], obj[argument_name])
+                _sanitize_argument_recursive(argument_value, sub_argument_rule, sub_argument_name, path + [argument_name], obj[argument_name])
         
         else:
             # Append the argument value to the target object
@@ -98,11 +101,11 @@ def sanitize_arguments(argument_rules : dict, arguments : dict):
 
     sanitized = {}
     for argument_name, argument_rule in argument_rules.items():
-        sanitize_argument_recursive(arguments, argument_rule, argument_name, ['root'], sanitized)
+        _sanitize_argument_recursive(arguments, argument_rule, argument_name, ['root'], sanitized)
     return sanitized
 
 
-def api_method(argument_rules : dict = {}, sanitize_arguments : bool = True):
+def api_method(argument_rules : dict = {}, do_sanitize_arguments : bool = True):
     """
     Decorator to specify some common behaviors for API methods.
     The arguments parameter specifies which arguments the API method specified.
@@ -115,7 +118,7 @@ def api_method(argument_rules : dict = {}, sanitize_arguments : bool = True):
     def decorator(func):
         async def wrapper():
             try:
-                arguments = sanitize_arguments(argument_rules, await request.get_json()) if sanitize_arguments else await request.get_json()
+                arguments = sanitize_arguments(argument_rules, await request.get_json()) if do_sanitize_arguments else await request.get_json()
                 response_status, response_data = await func(arguments)
                 return Response(current_app.json.dumps({ 'status': response_status, 'data': response_data }) + '\n', status=response_status, mimetype='application/json')
             
