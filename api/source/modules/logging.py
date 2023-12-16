@@ -1,27 +1,10 @@
-from source.env import IS_DEBUG
 from typing import Any, Union
 import logging
 import sys
 import os
 
 
-def get_logger(app_name: str) -> logging.Logger:
-    """
-    Get application logger and set debug level based on environment variable.
-    The default logger is set to logging.INFO, this way in debug mode we only see
-    debug output from loggers we actually define in our code.
-
-    """
-    app_logger = logging.getLogger(app_name)
-    app_logger.level = (logging.DEBUG if IS_DEBUG else logging.INFO)
-
-    return app_logger
-
-
-logger : logging.Logger = get_logger('postgres_api.logging')
-
-
-def _add_logging_level(level_name : str, level_value : int) -> None:
+def add_logging_level(level_name : str, level_value : int) -> None:
     """
     Adds a new logging level to the logging module. To achieve this, it adds a new level name and value,
     before inecting functions into the logger adapter, logger class and logging module itself.
@@ -83,42 +66,7 @@ def _add_logging_level(level_name : str, level_value : int) -> None:
         logging._releaseLock()
 
 
-_add_logging_level('NOTICE', 25) # Add custom logging level NOTICE - Like INFO but meant to be forwarded to user
-
-
-def _stream_supports_colour(stream: Any) -> bool:
-    """
-    Determine if the provided stream supports ANSI color codes.
-
-    Parameters
-    ----------
-    stream : Any
-        The stream the check for color support.
-
-    Returns
-    -------
-    bool
-        Whether or not the stream supports color.
-
-    References
-    ----------
-    This function was taken from https://github.com/Rapptz/discord.py/blob/master/discord/utils.py
-
-    """
-    # Pycharm and Vscode support colour in their inbuilt editors
-    if 'PYCHARM_HOSTED' in os.environ or os.environ.get('TERM_PROGRAM') == 'vscode':
-        return True
-
-    is_a_tty = hasattr(stream, 'isatty') and stream.isatty()
-    if sys.platform != 'win32':
-        return is_a_tty
-
-    # ANSICON checks for things like ConEmu
-    # WT_SESSION checks if this is Windows Terminal
-    return is_a_tty and ('ANSICON' in os.environ or 'WT_SESSION' in os.environ)
-
-
-class _CustomFormatter(logging.Formatter):
+class CustomFormatter(logging.Formatter):
     """
     Custom logging formatter without support for ANSI colour codes.
 
@@ -193,7 +141,7 @@ class _CustomFormatter(logging.Formatter):
             record.msg = original_msg
 
 
-class _CustomColourFormatter(logging.Formatter):
+class CustomColourFormatter(logging.Formatter):
     """
     Custom logging formatter with support for ANSI colour codes.
 
@@ -316,12 +264,44 @@ class _CustomColourFormatter(logging.Formatter):
             record.msg = original_msg
 
 
+def stream_supports_colour(stream: Any) -> bool:
+    """
+    Determine if the provided stream supports ANSI color codes.
+
+    Parameters
+    ----------
+    stream : Any
+        The stream the check for color support.
+
+    Returns
+    -------
+    bool
+        Whether or not the stream supports color.
+
+    References
+    ----------
+    This function was taken from https://github.com/Rapptz/discord.py/blob/master/discord/utils.py
+
+    """
+    # Pycharm and Vscode support colour in their inbuilt editors
+    if 'PYCHARM_HOSTED' in os.environ or os.environ.get('TERM_PROGRAM') == 'vscode':
+        return True
+
+    is_a_tty = hasattr(stream, 'isatty') and stream.isatty()
+    if sys.platform != 'win32':
+        return is_a_tty
+
+    # ANSICON checks for things like ConEmu
+    # WT_SESSION checks if this is Windows Terminal
+    return is_a_tty and ('ANSICON' in os.environ or 'WT_SESSION' in os.environ)
+
+
 def get_handler():
     handler = logging.StreamHandler()
-    if _stream_supports_colour(handler.stream):
-        formatter = _CustomColourFormatter()
+    if stream_supports_colour(handler.stream):
+        formatter = CustomColourFormatter()
     else:
-        formatter = _CustomFormatter()
+        formatter = CustomFormatter()
     handler.setFormatter(formatter)
 
     return handler
@@ -336,12 +316,13 @@ def setup_logging(file_path: Union[str, None], file_log_level:int = logging.INFO
     For root logger, sets up a logging handler with either _CustomColourFormatter as formatter 
     if the logging stream supports ANSI colour codes, or _CustomFormatter if it doesn't.
     Sets the logging level of the root logger to logging.DEFAULT. This is mainly for third-party packages.
-    In our own code, we use logger instances returned from get_logger,
-    which default to either logging.INFO or logging.DEBUG depending on env.IS_DEBUG.
+    In our own code, we use logger instances returned from get_logger.
     Lastly, adds a callback for sys.excepthook to allow our modified root logger to log
     exceptions on root level using logging.CRITICAL as log level.
 
     """
+    add_logging_level("NOTICE", 25) # Custom logging level. like INFO, but meant to be prominently displayed as a notification
+
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO) # Default to info for all loggers, we don't want to debug third party packages
     root_logger.addHandler(get_handler())
@@ -350,7 +331,7 @@ def setup_logging(file_path: Union[str, None], file_log_level:int = logging.INFO
         # Also set up file logger
         file_handler = logging.FileHandler(file_path)
         file_handler.setLevel(file_log_level)
-        file_handler.setFormatter(_CustomFormatter())
+        file_handler.setFormatter(CustomFormatter())
         root_logger.addHandler(file_handler)
 
     # Handle uncaught exceptions with logger as well

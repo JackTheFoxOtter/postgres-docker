@@ -11,16 +11,19 @@ services:
     container_name: postgres
     restart: unless-stopped
     environment:
+      # For Postgres
       - "PGDATA=/var/lib/postgresql/data/pgdata"
       - "POSTGRES_USER=${POSTGRES_USER}"
       - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+      # For API
+      - "PYTHONUNBUFFERED=1" # Fix issues with Python and Docker console output
+      - "ENVIRONMENT=${ENVIRONMENT}"
+      - "DEBUG=${DEBUG}"
       - "DB_CONN_SYNC=${DB_CONN_SYNC}"
       - "DB_CONN_ASYNC=${DB_CONN_ASYNC}"
-      - "HOST=${HOST}"
-      - "PORT=${PORT}"
-      - "QUART_ENV=${QUART_ENV}"
-      - "SECRET_KEY=${SECRET_KEY}"
-      - "PYTHONUNBUFFERED=1"
+      - "QUART_HOST=${QUART_HOST}"
+      - "QUART_PORT=${QUART_PORT}"
+      - "QUART_SECRET_KEY=${QUART_SECRET_KEY}"
     shm_size: 2gb
     volumes:
       - "./data/postgres:/var/lib/postgresql/data/:rw"

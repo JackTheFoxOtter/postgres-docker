@@ -1,11 +1,11 @@
-from source.modules.logging import get_logger
-from source.env import IS_DEBUG
+from source.env import DEBUG
 from quart import Response, request, current_app
 from werkzeug.exceptions import HTTPException
 from typing import Any, List
+import logging
 
 
-logger = get_logger('postgres_api.api_helper')
+logger = logging.getLogger('api_helper')
 
 
 class ArgumentSanitizationError(Exception):
@@ -24,7 +24,7 @@ class ArgumentValidationError(Exception):
     pass
 
 
-def _sanitize_arguments(argument_rules : dict, arguments : dict):
+def sanitize_arguments(argument_rules : dict, arguments : dict):
     """
     Sanetizes arguments based on a specified ruleset.
     
@@ -115,7 +115,7 @@ def api_method(argument_rules : dict = {}, sanitize_arguments : bool = True):
     def decorator(func):
         async def wrapper():
             try:
-                arguments = _sanitize_arguments(argument_rules, await request.get_json()) if sanitize_arguments else await request.get_json()
+                arguments = sanitize_arguments(argument_rules, await request.get_json()) if sanitize_arguments else await request.get_json()
                 response_status, response_data = await func(arguments)
                 return Response(current_app.json.dumps({ 'status': response_status, 'data': response_data }) + '\n', status=response_status, mimetype='application/json')
             
@@ -134,7 +134,7 @@ def api_method(argument_rules : dict = {}, sanitize_arguments : bool = True):
             except Exception as ex:
                 # Any other exception, probably in our code
                 logger.exception(f"Exception during processing of API method '{getattr(func, '__name__', 'Unkown')}'!")
-                error_message = f"500 Internal Server Error: {str(ex)}" if IS_DEBUG else "500 Internal Server Error"
+                error_message = f"500 Internal Server Error: {str(ex)}" if DEBUG else "500 Internal Server Error"
                 return Response(current_app.json.dumps({ 'status': 500, 'data': { 'error': error_message } }) + '\n', status=500, mimetype='application/json')
 
         # NOTE: The __name__ attribute of the decorated function is used by flask.sansio.scaffhold.py in _endpoint_from_view_func 
