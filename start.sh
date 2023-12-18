@@ -13,4 +13,4 @@ for folder in "${datafolders[@]}"; do
     chown "$CURRENT_UID:$CURRENT_GID" "./data/$folder"
 done
 
-docker compose up --build --build-arg "BUILDDATE=$(date +%s)"
+docker compose build --build-arg "BUILDDATE=$(date +%s)" && docker compose up
