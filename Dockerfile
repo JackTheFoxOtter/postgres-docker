@@ -16,7 +16,7 @@ COPY api /api
 #       If it works, it works.
 RUN pip install -r /api/requirements.txt --break-system-packages
 
-# Prepare backup and log folder permissions
+# Set directory permissions
 RUN mkdir -p /backups /logs /var/lib/postgresql/data
 RUN chown ${CURRENT_UID}:${CURRENT_GID} /backups /logs /var/lib/postgresql/data
 
