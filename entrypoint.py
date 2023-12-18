@@ -13,20 +13,53 @@ to proceed depending on configuration. Usually that means restarting the contain
 
 """
 from asyncio import StreamReader, create_subprocess_shell
-from asyncio.subprocess import PIPE
+from asyncio.subprocess import Process, PIPE
 from datetime import datetime, UTC
+from typing import Any, List
 import asyncio
+import logging
+import signal
+import sys
+import os
 
 
-def timestamp() -> str:
+shutdown_requested : bool = False
+processes : List[Process] = []
+
+
+def setup_logging() -> None:
     """
-    Returns the current timestamp as a string.
+    Function to setup logging configuration. Should only be called once at startup.
 
     """
-    return datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    
+    # Setup formatter
+    formatter = logging.Formatter('%(asctime)s %(message)s', '%Y-%m-%d %H:%M:%S')
+
+    # Setup stream handler
+    stream_handler = logging.StreamHandler()
+    stream_handler.formatter = formatter
+    root_logger.addHandler(stream_handler)
+
+    # Setup file handler
+    utc_timestamp = datetime.now(UTC).strftime('%Y%m%d%H%M%S')
+    file_handler = logging.FileHandler(f'/logs/{utc_timestamp}_supervisor.log')
+    file_handler.formatter = formatter
+    root_logger.addHandler(file_handler)
+
+    # Handle uncaught exceptions with logger as well
+    def _handle_uncaught_exception(exc_type : Any, exc_value : Any, exc_traceback : Any) -> None:
+        if issubclass(exc_type, KeyboardInterrupt):
+            root_logger.critical("KeyboardInterrupt received.")
+        else:
+            root_logger.critical("App has encountered an unhandled exception!", exc_info=(exc_type, exc_value, exc_traceback))
+
+    sys.excepthook = _handle_uncaught_exception
 
 
-async def print_lines_continuously(process_name : str, pipe_name : str, reader : StreamReader):
+async def log_lines_continuously(process_name : str, pipe_name : str, reader : StreamReader) -> None:
     """
     Continuously logs the provided reader's lines to the console as they show up, 
     until there are no new lines to log (indicating process termination).
@@ -35,7 +68,7 @@ async def print_lines_continuously(process_name : str, pipe_name : str, reader :
     while True:
         line = await reader.readline()
         if not line: break
-        print(f"{timestamp()} [{process_name} > {pipe_name}] {line.decode('utf-8')}", end="")
+        logging.info(f"[{process_name} > {pipe_name}] {line.decode('utf-8').rstrip(os.linesep)}")
 
 
 async def execute_subprocess_shell(name : str, command : str) -> int:
@@ -47,38 +80,41 @@ async def execute_subprocess_shell(name : str, command : str) -> int:
     """
     process = await create_subprocess_shell(command, stdout=PIPE, stderr=PIPE)
     
+    global processes
+    processes.append(process)
+
     await asyncio.gather(
-        print_lines_continuously(name, 'stdout', process.stdout),
-        print_lines_continuously(name, 'stderr', process.stderr)
+        log_lines_continuously(name, 'stdout', process.stdout),
+        log_lines_continuously(name, 'stderr', process.stderr)
     )
 
     await process.wait() # Wait for process to have ended (returncode isn't immediately accessible)
     return process.returncode
     
 
-async def start_supervised_process(name : str, command : str, restart : bool = False, critical : bool = True):
+async def start_supervised_process(name : str, command : str, restart : bool = False, critical : bool = True) -> None:
     """
     Runs a shell command as a new supervised process.
     If restart = True, will automatically restart the process when it terminates.
     If critical = True an Exception will be raised should the process stop (without being restarted)
 
     """
-    print(f"{timestamp()} [Supervisor] Creating subprocess '{name}' for shell command '{command}'...")
+    logging.info(f"[Supervisor] Creating subprocess '{name}' for shell command '{command}'...")
 
     while True:
         returncode = await execute_subprocess_shell(name, command)
-        print(f"{timestamp()} [Supervisor] Subprocess '{name}' exited with code {returncode}.")
+        logging.info(f"[Supervisor] Subprocess '{name}' exited with code {returncode}.")
 
-        if restart:
+        if restart and not shutdown_requested:
             # Subprocess should be restarted
-            print(f"{timestamp()} [Supervisor] Restarting subprocess '{name}' for shell command '{command}'...")
+            logging.info(f"[Supervisor] Restarting subprocess '{name}' for shell command '{command}'...")
 
         else:
             # Subprocess should not be restarted
-            print(f"{timestamp()} [Supervisor] Subprocess '{name}' will NOT be restarted.")
+            logging.info(f"[Supervisor] Subprocess '{name}' will NOT be restarted.")
             break
 
-    if critical:
+    if critical and not shutdown_requested:
         # A critical process has ended. Throw exception to take down the container
         raise Exception("Critical process has ended!")
 
@@ -90,15 +126,41 @@ async def main():
             start_supervised_process("Postgres", '/usr/local/bin/docker-entrypoint.sh postgres -c log_line_prefix="%t "', restart=False, critical=True),
             start_supervised_process("QuartAPI", 'python -u /api/run.py', restart=True, critical=False),
         )
-        print(f"{timestamp()} [Supervisor] All processes have ended without indication of error.")
+        logging.info(f"[Supervisor] All processes have ended without indication of error.")
         exit(0)
     
     except Exception as ex:
         # Exception occured, exit to kill container
-        print(f"{timestamp()} [Supervisor] Exception: {str(ex)}")
+        logging.info(f"[Supervisor] Exception: {str(ex)}")
         exit(1)
 
 
+def signal_handler(signal_int : int, frame : Any):
+    """
+    Any termination signal should initiate the shutdown procedure.
+    Once the shutdown procedure is initiated, stopped processes will not restart anymore.
+    Ever subprocess will receive the SIGTERM signal to shut it down.
+
+    """
+    signal_name = signal.Signals(signal_int).name
+    logging.info(f"{signal_name} received, shutting down...")
+    
+    global shutdown_requested
+    shutdown_requested = True
+
+    process : Process
+    for process in processes:
+        process.send_signal(signal.SIGTERM)
+
+
 if __name__ == '__main__':
-    print(f"{timestamp()} [Supervisor] Starting process supervisor...")
+    setup_logging()
+
+    logging.info(f"[Supervisor] Registering termination signals...")
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGQUIT, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
+
+    logging.info(f"[Supervisor] Starting process supervisor...")
     asyncio.run(main())
