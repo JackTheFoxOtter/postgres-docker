@@ -14,7 +14,16 @@ to proceed depending on configuration. Usually that means restarting the contain
 """
 from asyncio import StreamReader, create_subprocess_shell
 from asyncio.subprocess import PIPE
+from datetime import datetime, UTC
 import asyncio
+
+
+def timestamp() -> str:
+    """
+    Returns the current timestamp as a string.
+
+    """
+    return datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')
 
 
 async def print_lines_continuously(process_name : str, pipe_name : str, reader : StreamReader):
@@ -26,7 +35,7 @@ async def print_lines_continuously(process_name : str, pipe_name : str, reader :
     while True:
         line = await reader.readline()
         if not line: break
-        print(f"{process_name} > {pipe_name}  | {line.decode('utf-8')}", end="")
+        print(f"{timestamp()} [{process_name} > {pipe_name}] {line.decode('utf-8')}", end="")
 
 
 async def execute_subprocess_shell(name : str, command : str) -> int:
@@ -54,19 +63,19 @@ async def start_supervised_process(name : str, command : str, restart : bool = F
     If critical = True an Exception will be raised should the process stop (without being restarted)
 
     """
-    print(f"Creating subprocess '{name}' for shell command '{command}'...")
+    print(f"{timestamp()} [Supervisor] Creating subprocess '{name}' for shell command '{command}'...")
 
     while True:
         returncode = await execute_subprocess_shell(name, command)
-        print(f"Subprocess '{name}' exited with code {returncode}.")
+        print(f"{timestamp()} [Supervisor] Subprocess '{name}' exited with code {returncode}.")
 
         if restart:
             # Subprocess should be restarted
-            print(f"Restarting subprocess '{name}' for shell command '{command}'...")
+            print(f"{timestamp()} [Supervisor] Restarting subprocess '{name}' for shell command '{command}'...")
 
         else:
             # Subprocess should not be restarted
-            print(f"Subprocess '{name}' will NOT be restarted.")
+            print(f"{timestamp()} [Supervisor] Subprocess '{name}' will NOT be restarted.")
             break
 
     if critical:
@@ -78,18 +87,18 @@ async def main():
     try:
         # Start supervised processes
         await asyncio.gather(
-            start_supervised_process("Postgres", '/usr/local/bin/docker-entrypoint.sh postgres', restart=False, critical=True),
+            start_supervised_process("Postgres", '/usr/local/bin/docker-entrypoint.sh postgres -c log_line_prefix="%t "', restart=False, critical=True),
             start_supervised_process("QuartAPI", 'python -u /api/run.py', restart=True, critical=False),
         )
-        print(f"All processes have ended without indication of error.")
+        print(f"{timestamp()} [Supervisor] All processes have ended without indication of error.")
         exit(0)
     
     except Exception as ex:
         # Exception occured, exit to kill container
-        print(f"Exception: {str(ex)}")
+        print(f"{timestamp()} [Supervisor] Exception: {str(ex)}")
         exit(1)
 
 
 if __name__ == '__main__':
-    print("Starting process supervisor...")
+    print(f"{timestamp()} [Supervisor] Starting process supervisor...")
     asyncio.run(main())

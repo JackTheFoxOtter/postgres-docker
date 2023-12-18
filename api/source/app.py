@@ -1,14 +1,11 @@
 #=====================================================================#
 #------------------------ [Initialize logging] -----------------------#
 #=====================================================================#
-from source.modules.utils import get_timestamped_filename
 from source.modules.logging import setup_logging
-from source.env import  DEBUG, PATH_LOGS
 import logging
-import os
 
 # Configure logging. Sets up custom log level 'notice', custom formatters & root logger
-setup_logging(os.path.join(PATH_LOGS, get_timestamped_filename('postgres_api', 'log')))
+setup_logging() # No need to log to file, supervisor takes care of that
 logging.getLogger("asyncio").setLevel(logging.WARNING)
 # logging.logAsyncioTasks = False # TODO: Available in Python 3.12, so once the alpine package registry upgrades, we can uncomment this!
 

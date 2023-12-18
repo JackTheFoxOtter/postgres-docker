@@ -25,4 +25,4 @@ EXPOSE 5000
 
 # Entrypoint
 COPY entrypoint.py /entrypoint.py
-ENTRYPOINT [ "python", "entrypoint.py" ]
+CMD exec python entrypoint.py 2>&1 | tee -a "/logs/$(date +'%Y%m%d%H%M%S')_postgres.log"

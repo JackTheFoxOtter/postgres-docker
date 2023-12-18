@@ -307,7 +307,7 @@ def get_handler():
     return handler
 
 
-def setup_logging(file_path: Union[str, None], file_log_level:int = logging.INFO) -> None:
+def setup_logging(file_path : Union[str, None] = None, file_log_level : int = logging.INFO) -> None:
     """
     Function to setup logging configuration. Should only be called once at startup.
 

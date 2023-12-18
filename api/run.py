@@ -27,8 +27,11 @@ if environment in [ 'production', 'prod' ]:
     asyncio.run(serve(app, config))
 
 elif environment in [ 'development', 'dev', 'test', 'testing' ]:
+    from source.patcher import apply_patches
+
     # Testing environment
     logger.info("Starting to serve app (integrated debug server)...")
+    apply_patches() # Custom logger injection for debug environment
     app.run(
         host=QUART_HOST,
         port=QUART_PORT,
