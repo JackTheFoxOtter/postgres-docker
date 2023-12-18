@@ -17,7 +17,8 @@ COPY api /api
 RUN pip install -r /api/requirements.txt --break-system-packages
 
 # Invalidate the cache from here on.
-# This prevents docker from caching file permissions, because those could change on the host at any time.
+# This prevents docker from caching permissions of mounted directories,
+# as those could change on the host at any time.
 ADD http://worldclockapi.com/api/json/utc/now /etc/builddate
 
 # Set directory permissions
