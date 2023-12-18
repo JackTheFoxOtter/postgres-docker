@@ -16,12 +16,13 @@ COPY api /api
 #       If it works, it works.
 RUN pip install -r /api/requirements.txt --break-system-packages
 
+# Invalidate the cache from here on.
+# This prevents docker from caching file permissions, because those could change on the host at any time.
+ADD http://worldclockapi.com/api/json/utc/now /etc/builddate
+
 # Set directory permissions
 RUN mkdir -p /backups /logs /var/lib/postgresql/data
 RUN chown ${CURRENT_UID}:${CURRENT_GID} /backups /logs /var/lib/postgresql/data
-
-# Expose port 5000 for the API
-EXPOSE 5000
 
 # Entrypoint
 COPY entrypoint.py /entrypoint.py
