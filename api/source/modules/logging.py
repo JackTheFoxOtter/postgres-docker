@@ -7,7 +7,7 @@ import os
 def add_logging_level(level_name : str, level_value : int) -> None:
     """
     Adds a new logging level to the logging module. To achieve this, it adds a new level name and value,
-    before inecting functions into the logger adapter, logger class and logging module itself.
+    before injecting functions into the logger adapter, logger class and logging module itself.
     The added logging level will behave like the default ones.
 
     Parameters
