@@ -45,8 +45,8 @@ loop.set_debug(DEBUG) # Set asyncio event loop debug mode when launched in debug
 #--------------------------- [Core Routes] ---------------------------#
 #=====================================================================#
 from source.modules.backup import get_backups, try_create_backup, try_restore_backup
+from werkzeug.exceptions import InternalServerError, BadRequest
 from source.modules.utils import filename_validator
-from werkzeug.exceptions import InternalServerError
 
 @app.post("/echo")
 @api_method(do_sanitize_arguments=False)
@@ -83,6 +83,9 @@ async def backups_post(request_data : dict):
     action = request_data['action']
     filename = request_data['filename']
     
+    if database == 'postgres':
+        raise BadRequest("Database name cannot be 'postgres'!")
+
     if action == 'create':
         # Create new backup
         success, filename = await try_create_backup(database, filename)
