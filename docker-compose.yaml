@@ -32,10 +32,11 @@ services:
       - "./data/backups:/backups:rw"
       - "./data/logs:/logs:rw"
     networks:
+      - "postgres"
       - "pgadmin"
-    ports:
-      - "5432:${POSTGRES_PORT}"
-      - "5001:5000" # Debug port forwarding for testing of Rest API
+    ports: []
+      # - "5432:${POSTGRES_PORT}" # Debug port forwarding for database access outside of container
+      # - "5001:${QUART_PORT}" # Debug port forwarding for testing of rest API
   
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -54,5 +55,7 @@ services:
       - "8080:80"
 
 networks:
+  postgres:
+    external: false
   pgadmin:
     external: false
