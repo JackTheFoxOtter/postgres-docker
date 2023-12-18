@@ -1,6 +1,6 @@
 @echo off
 
-Rem Create required datafolders (these are mounted into the containers).
-Rem On Windows we don't need to worry about file ownership here.
+Rem On Windows we don't worry about permissions (I think).
+Rem Missing data folders will be owned by user / group 1000 by default.
 
 docker compose up --build
