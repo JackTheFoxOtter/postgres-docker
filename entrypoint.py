@@ -121,6 +121,11 @@ async def start_supervised_process(name : str, command : str, restart : bool = F
 
 
 async def main():
+    """
+    Initializes supervised processes.
+    Exits once all supervised processes have stopped (without being restarted).
+
+    """
     try:
         # Start supervised processes
         await asyncio.gather(
@@ -140,7 +145,7 @@ def signal_handler(signal_int : int, frame : Any):
     """
     Any termination signal should initiate the shutdown procedure.
     Once the shutdown procedure is initiated, stopped processes will not restart anymore.
-    Ever subprocess will receive the SIGTERM signal to shut it down.
+    Every subprocess will receive the SIGTERM signal to shut it down.
 
     """
     signal_name = signal.Signals(signal_int).name
