@@ -45,16 +45,17 @@ def setup_logging() -> None:
 
     # Setup file handler
     utc_timestamp = datetime.now(UTC).strftime('%Y%m%d%H%M%S')
-    file_handler = logging.FileHandler(f'/logs/{utc_timestamp}_supervisor.log')
+    log_file_name = f"{utc_timestamp}_{os.getenv('LOGNAME', 'supervisor')}.log"
+    file_handler = logging.FileHandler(f'/logs/{log_file_name}')
     file_handler.formatter = formatter
     root_logger.addHandler(file_handler)
 
     # Handle uncaught exceptions with logger as well
     def _handle_uncaught_exception(exc_type : Any, exc_value : Any, exc_traceback : Any) -> None:
         if issubclass(exc_type, KeyboardInterrupt):
-            root_logger.critical("KeyboardInterrupt received.")
+            root_logger.critical("[Supervisor] KeyboardInterrupt received.")
         else:
-            root_logger.critical("App has encountered an unhandled exception!", exc_info=(exc_type, exc_value, exc_traceback))
+            root_logger.critical("[Supervisor] Encountered an unhandled exception!", exc_info=(exc_type, exc_value, exc_traceback))
 
     sys.excepthook = _handle_uncaught_exception
 
@@ -143,7 +144,7 @@ def signal_handler(signal_int : int, frame : Any):
 
     """
     signal_name = signal.Signals(signal_int).name
-    logging.info(f"{signal_name} received, shutting down...")
+    logging.info(f"[Supervisor] {signal_name} received, shutting down...")
     
     global shutdown_requested
     shutdown_requested = True
