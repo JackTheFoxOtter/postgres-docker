@@ -18,4 +18,4 @@ for folder in "${datafolders[@]}"; do
     chown "$CURRENT_UID:$CURRENT_GID" "$DATA_ROOT/$folder"
 done
 
-docker compose build --build-arg "BUILDDATE=$(date +%s)" && docker compose up
+docker compose build --build-arg "BUILDDATE=$(date +%s)" && docker compose down && docker compose up
