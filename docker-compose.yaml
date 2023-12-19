@@ -9,29 +9,29 @@ services:
         - "CURRENT_GID=${CURRENT_GID:-1000}"
         - "BUILDDATE=${BUILDDATE:-0}"
     user: ${CURRENT_UID:-1000}:${CURRENT_GID:-1000}
-    container_name: postgres
+    container_name: postgres-postgres
     restart: unless-stopped
     environment:
       # Global
-      - "LOGNAME=${LOGNAME}"
+      - "LOGNAME=postgres" # Name used in log files (<timestamp>_<logname>.log)
+      - "ENVIRONMENT=${ENVIRONMENT}"
+      - "DEBUG=${DEBUG}"
       # For Postgres
       - "PGDATA=/var/lib/postgresql/data/pgdata"
       - "POSTGRES_USER=${POSTGRES_USER}"
       - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
-      # For API
-      - "PYTHONUNBUFFERED=1" # Fix issues with Python and Docker console output
-      - "ENVIRONMENT=${ENVIRONMENT}"
-      - "DEBUG=${DEBUG}"
       - "DB_CONN_SYNC=${DB_CONN_SYNC}"
       - "DB_CONN_ASYNC=${DB_CONN_ASYNC}"
-      - "QUART_HOST=${QUART_HOST}"
-      - "QUART_PORT=${QUART_PORT}"
-      - "QUART_SECRET_KEY=${QUART_SECRET_KEY}"
+      # For Postgres API
+      - "PYTHONUNBUFFERED=1" # Fix issues with Python and Docker console output
+      - "QUART_HOST=${POSTGRES_QUART_API_HOST}"
+      - "QUART_PORT=${POSTGRES_QUART_API_PORT}"
+      - "QUART_SECRET_KEY=${POSTGRES_QUART_API_SECRET_KEY}"
     shm_size: 2gb
     volumes:
-      - "./data/postgres:/var/lib/postgresql/data/:rw"
-      - "./data/backups:/backups:rw"
-      - "./data/logs:/logs:rw"
+      - "${DATA_ROOT}/postgres:/var/lib/postgresql/data/:rw"
+      - "${DATA_ROOT}/backups:/backups:rw"
+      - "${DATA_ROOT}/logs:/logs:rw"
     networks:
       - "postgres"
       - "pgadmin"
@@ -41,7 +41,7 @@ services:
   
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: pgadmin4
+    container_name: postgres-pgadmin
     restart: no
     profiles:
       - pgadmin
@@ -49,7 +49,7 @@ services:
       - "PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}"
       - "PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}"
     volumes:
-      - "${PGADMIN_ROOT}/pgadmin:/var/lib/pgadmin"
+      - "${DATA_ROOT}/pgadmin:/var/lib/pgadmin"
     networks:
       - "pgadmin"
     ports:

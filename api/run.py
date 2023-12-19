@@ -2,14 +2,13 @@
 #------------------------- [Start Application] -----------------------#
 #=====================================================================#
 from source.env import ENVIRONMENT, DEBUG, QUART_HOST, QUART_PORT
-from source.app import logger, app
+from source.app import logger, quart_app
 import asyncio
 import sys
 
 logger.info(f"Environment: {ENVIRONMENT}; Debug: {str(DEBUG)}; Python: {sys.version}")
 
-environment = ENVIRONMENT.lower()
-if environment in [ 'production', 'prod' ]:
+if ENVIRONMENT == 'production':
     # Production environment
     from hypercorn.asyncio import serve
     from hypercorn.config import Config
@@ -24,15 +23,15 @@ if environment in [ 'production', 'prod' ]:
     config.errorlog = logging.getLogger('hypercorn.error')
 
     logger.info("Starting to serve app...")
-    asyncio.run(serve(app, config))
+    asyncio.run(serve(quart_app, config))
 
-elif environment in [ 'development', 'dev', 'test', 'testing' ]:
+elif ENVIRONMENT == 'development':
+    # Testing environment
     from source.patcher import apply_patches
 
-    # Testing environment
     logger.info("Starting to serve app (integrated debug server)...")
     apply_patches() # Custom logger injection for debug environment
-    app.run(
+    quart_app.run(
         host=QUART_HOST,
         port=QUART_PORT,
         loop=asyncio.get_event_loop(),

@@ -19,21 +19,22 @@ from quart import Quart
 import asyncio
 import logging
 
+
 logger = logging.getLogger('postgres_api')
 logger.level = logging.DEBUG if DEBUG else logging.INFO
 logger.info(f"Starting Postgres API...")
 
 # Create and configure quart app
-app = Quart(
+quart_app = Quart(
     import_name='postgres_api',
     static_folder='resources/static',
     static_url_path='/static',
     template_folder='resources/templates'
 )
-app.config['DEBUG'] = DEBUG
-app.config['TESTING'] = False
-app.config['SECRET_KEY'] = QUART_SECRET_KEY
-app.config['EXPLAIN_TEMPLATE_LOADING'] = DEBUG
+quart_app.config['DEBUG'] = DEBUG
+quart_app.config['TESTING'] = False
+quart_app.config['SECRET_KEY'] = QUART_SECRET_KEY
+quart_app.config['EXPLAIN_TEMPLATE_LOADING'] = DEBUG
 
 # Configure event loop
 loop = asyncio.get_event_loop()
@@ -48,17 +49,20 @@ from source.modules.backup import get_backups, try_create_backup, try_restore_ba
 from werkzeug.exceptions import InternalServerError, BadRequest
 from source.modules.utils import filename_validator
 
-@app.post("/echo")
+
+@quart_app.post("/echo")
 @api_method(do_sanitize_arguments=False)
 async def echo_post(request_data : dict):
     return 200, { "input": request_data }
 
-@app.get('/backups')
+
+@quart_app.get('/backups')
 @api_method()
 async def backups_get(request_data : dict):
     return 200, { 'backups': get_backups() }
 
-@app.post('/backups')
+
+@quart_app.post('/backups')
 @api_method({
     'database': {
         'allowed_types': [ str ],

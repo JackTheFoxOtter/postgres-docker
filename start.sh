@@ -1,3 +1,8 @@
+# Export environment variables from .env file
+set -o allexport
+source .env
+set +o allexport
+
 # Export current UID and GID to environment variables (used in postgres-container in docker-compose.yaml)
 export CURRENT_UID=$(id -u)
 export CURRENT_GID=$(id -g)
@@ -10,7 +15,7 @@ export CURRENT_GID=$(id -g)
 datafolders=("postgres" "backups" "logs")
 for folder in "${datafolders[@]}"; do
     mkdir "./data/$folder"
-    chown "$CURRENT_UID:$CURRENT_GID" "./data/$folder"
+    chown "$CURRENT_UID:$CURRENT_GID" "$DATA_ROOT/$folder"
 done
 
 docker compose build --build-arg "BUILDDATE=$(date +%s)" && docker compose up
