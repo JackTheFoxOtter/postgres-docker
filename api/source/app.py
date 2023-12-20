@@ -1,11 +1,11 @@
 #=====================================================================#
 #------------------------ [Initialize logging] -----------------------#
 #=====================================================================#
-from source.modules.logging import setup_logging
+from jtfo.logging import setup_logging
 import logging
 
 # Configure logging. Sets up custom log level 'notice', custom formatters & root logger
-setup_logging() # No need to log to file, supervisor takes care of that
+setup_logging(use_colour_if_supported=False) # No need to log to file, supervisor takes care of that
 logging.getLogger("asyncio").setLevel(logging.WARNING)
 # logging.logAsyncioTasks = False # TODO: Available in Python 3.12, so once the alpine package registry upgrades, we can uncomment this!
 

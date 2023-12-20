@@ -1,4 +1,5 @@
 # Core
+jtfo-logging @ git+https://github.com/JackTheFoxOtter/python-logging.git
 Hypercorn==0.14.4
 Quart==0.19.3
 

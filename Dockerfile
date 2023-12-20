@@ -1,7 +1,7 @@
 FROM postgres:16-alpine
 
 # Install required packages
-RUN apk add --no-cache python3 py3-pip;
+RUN apk add --no-cache git python3 py3-pip;
 
 # Install required python packages
 # NOTE: The container screams at me if I try to install the packages without a venv.
