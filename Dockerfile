@@ -14,6 +14,9 @@ RUN pip install -r /api/requirements.txt --break-system-packages;
 COPY api /api
 COPY entrypoint.py /entrypoint.py
 
+# Allow scripts in /api/scripts to be executed
+RUN chmod -R +x /api/scripts/
+
 # Invalidate the cache from here on.
 # This prevents docker from caching permissions of mounted directories,
 # as those could change on the host at any time.

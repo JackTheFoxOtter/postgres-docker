@@ -51,7 +51,7 @@ from source.modules.utils import filename_validator
 
 
 @quart_app.post("/echo")
-@api_method(do_sanitize_arguments=False)
+@api_method(sanitize_arguments=False)
 async def echo_post(request_data : dict):
     return 200, { "input": request_data }
 
@@ -103,4 +103,3 @@ async def backups_post(request_data : dict):
             raise InternalServerError("Backup was not restored! This might be super bad!")
 
     return 200, { 'database': database, 'action': action, 'name': filename }
-

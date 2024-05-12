@@ -24,7 +24,7 @@ class ArgumentValidationError(Exception):
     pass
 
 
-def sanitize_arguments(argument_rules : dict, arguments : dict):
+def _sanitize_arguments(argument_rules : dict, arguments : dict):
     """
     Sanetizes arguments based on a specified ruleset.
     
@@ -105,7 +105,7 @@ def sanitize_arguments(argument_rules : dict, arguments : dict):
     return sanitized
 
 
-def api_method(argument_rules : dict = {}, do_sanitize_arguments : bool = True):
+def api_method(argument_rules : dict = {}, sanitize_arguments : bool = True):
     """
     Decorator to specify some common behaviors for API methods.
     The arguments parameter specifies which arguments the API method specified.
@@ -118,7 +118,7 @@ def api_method(argument_rules : dict = {}, do_sanitize_arguments : bool = True):
     def decorator(func):
         async def wrapper():
             try:
-                arguments = sanitize_arguments(argument_rules, await request.get_json()) if do_sanitize_arguments else await request.get_json()
+                arguments = _sanitize_arguments(argument_rules, await request.get_json()) if sanitize_arguments else await request.get_json()
                 response_status, response_data = await func(arguments)
                 return Response(current_app.json.dumps({ 'status': response_status, 'data': response_data }) + '\n', status=response_status, mimetype='application/json')
             
