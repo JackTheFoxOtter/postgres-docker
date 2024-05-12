@@ -23,8 +23,27 @@ import sys
 import os
 
 
+class ProcessInfo():
+    """
+    Represents a supervised process.
+
+    """
+    _process : Process
+    _termination_signal : int
+
+    def __init__(self, process : Process, termination_signal : int):
+        self._process = process
+        self._termination_signal = termination_signal
+    
+    def send_signal(self, signal : int):
+        self._process.send_signal(signal)
+
+    def terminate(self):
+        self.send_signal(self._termination_signal)
+
+
 shutdown_requested : bool = False
-processes : List[Process] = []
+processes : List[ProcessInfo] = []
 
 
 def setup_logging() -> None:
@@ -72,7 +91,7 @@ async def log_lines_continuously(process_name : str, pipe_name : str, reader : S
         logging.info(f"[{process_name} > {pipe_name}] {line.decode('utf-8').rstrip(os.linesep)}")
 
 
-async def execute_subprocess_shell(name : str, command : str) -> int:
+async def execute_subprocess_shell(name : str, command : str, termination_signal : int) -> int:
     """
     Starts a subprocess for the provided shell command and begins to continuously log
     its stdout and stderr streams to the console until the process terminates.
@@ -82,7 +101,7 @@ async def execute_subprocess_shell(name : str, command : str) -> int:
     process = await create_subprocess_shell(command, stdout=PIPE, stderr=PIPE)
     
     global processes
-    processes.append(process)
+    processes.append(ProcessInfo(process, termination_signal))
 
     await asyncio.gather(
         log_lines_continuously(name, 'stdout', process.stdout),
@@ -93,7 +112,7 @@ async def execute_subprocess_shell(name : str, command : str) -> int:
     return process.returncode
     
 
-async def start_supervised_process(name : str, command : str, restart : bool = False, critical : bool = True) -> None:
+async def start_supervised_process(name : str, command : str, restart : bool = False, critical : bool = True, termination_signal : int = signal.SIGTERM) -> None:
     """
     Runs a shell command as a new supervised process.
     If restart = True, will automatically restart the process when it terminates.
@@ -103,7 +122,7 @@ async def start_supervised_process(name : str, command : str, restart : bool = F
     logging.info(f"[Supervisor] Creating subprocess '{name}' for shell command '{command}'...")
 
     while True:
-        returncode = await execute_subprocess_shell(name, command)
+        returncode = await execute_subprocess_shell(name, command, termination_signal)
         logging.info(f"[Supervisor] Subprocess '{name}' exited with code {returncode}.")
 
         if restart and not shutdown_requested:
@@ -129,7 +148,7 @@ async def main():
     try:
         # Start supervised processes
         await asyncio.gather(
-            start_supervised_process("Postgres", '/usr/local/bin/docker-entrypoint.sh postgres -c log_line_prefix="%t "', restart=False, critical=True),
+            start_supervised_process("Postgres", '/usr/local/bin/docker-entrypoint.sh postgres -c log_line_prefix="%t "', restart=False, critical=True, termination_signal=signal.SIGINT),
             start_supervised_process("QuartAPI", 'python -u /api/run.py', restart=True, critical=False),
         )
         logging.info(f"[Supervisor] All processes have ended without indication of error.")
@@ -154,9 +173,9 @@ def signal_handler(signal_int : int, frame : Any):
     global shutdown_requested
     shutdown_requested = True
 
-    process : Process
+    process : ProcessInfo
     for process in processes:
-        process.send_signal(signal.SIGTERM)
+        process.terminate()
 
 
 if __name__ == '__main__':
