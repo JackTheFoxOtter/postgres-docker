@@ -16,7 +16,7 @@ def get_backups() -> List[str]:
 
 
 async def try_create_backup(database : str, backup_name : str) -> Tuple[bool, str]:
-    logger.info(f"Attempting to create database backup '{backup_name}'...)")
+    logger.info(f"Attempting to create database backup '{backup_name}'...")
     try:
         scheme = str(PARSED_DB_CONN.scheme).lower()
         if scheme != 'postgresql':
