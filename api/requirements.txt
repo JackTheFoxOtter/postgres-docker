@@ -1,7 +1,7 @@
 # Core
 jtfo-logging @ git+https://github.com/JackTheFoxOtter/python-logging.git
-Hypercorn==0.14.4
-Quart==0.19.3
+Hypercorn==0.17.3
+Quart==0.19.9
 
 # IO
-pathvalidate==3.2.0
+pathvalidate==3.2.1
