@@ -149,7 +149,7 @@ async def main():
         # Start supervised processes
         await asyncio.gather(
             start_supervised_process("Postgres", '/usr/local/bin/docker-entrypoint.sh postgres -c log_line_prefix="%t "', restart=False, critical=True, termination_signal=signal.SIGINT),
-            start_supervised_process("QuartAPI", 'python -u /api/run.py', restart=True, critical=False),
+            start_supervised_process("QuartAPI", 'python -u /app/api/run.py', restart=True, critical=False),
         )
         logging.info(f"[Supervisor] All processes have ended without indication of error.")
         exit(0)

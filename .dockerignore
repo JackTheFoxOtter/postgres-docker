@@ -1,0 +1,26 @@
+# Python venv (not used in container)
+.venv/
+
+# Git stuff
+.git/
+.gitignore
+
+# Docker stuff
+.dockerignore
+
+# Data directory (subfolders created as mountpoints instead)
+data/
+
+# Host-only application files
+tools/
+.env
+.env.example
+Dockerfile
+docker-compose.yaml
+README.md
+LICANSE.md
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class

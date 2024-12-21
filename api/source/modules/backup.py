@@ -18,7 +18,7 @@ async def try_create_backup(database : str, backup_name : str) -> Tuple[bool, st
     try:
         backup_file_name = get_unique_filename(PATH_BACKUPS, get_timestamped_filename(f"{database}_{backup_name}", f"postgresql.gz"))
         backup_file_path = os.path.join(PATH_BACKUPS, backup_file_name)
-        if await execute_subprocess_shell(logger, 'create_backup', f'/api/scripts/create_backup.sh "{database}" "{backup_file_path}"') > 0:
+        if await execute_subprocess_shell(logger, 'create_backup', f'/app/api/scripts/create_backup.sh "{database}" "{backup_file_path}"') > 0:
             raise Exception("Failed to create backup!")
 
         logger.info(f"Successfully backed up database '{database}'! (-> '{backup_file_path}')")
@@ -33,7 +33,7 @@ async def try_restore_backup(database : str, backup_file_name : str) -> bool:
     logger.info(f"Attempting to restore backup from file '{backup_file_name}' for database '{database}'...")
     try:
         backup_file_path = os.path.join(PATH_BACKUPS, backup_file_name)
-        if await execute_subprocess_shell(logger, 'restore_backup', f'/api/scripts/restore_backup.sh "{database}" "{backup_file_path}"') > 0:
+        if await execute_subprocess_shell(logger, 'restore_backup', f'/app/api/scripts/restore_backup.sh "{database}" "{backup_file_path}"') > 0:
             raise Exception("Failed to restore backup!")
         
         logger.info(f"Successfully restored database from backup '{backup_file_path}'!")

@@ -7,25 +7,21 @@ RUN apk add --no-cache git python3 py3-pip;
 # NOTE: The container screams at me if I try to install the packages without a venv.
 #       Since this is a container tho, I don't see much harm in passing --break-system-packages.
 #       If it works, it works.
-ADD api/requirements.txt /api/requirements.txt
-RUN pip install -r /api/requirements.txt --break-system-packages;
+ADD api/requirements.txt /app/api/requirements.txt
+RUN pip install -r /app/api/requirements.txt --break-system-packages;
 
 # Copy remaining application files
-COPY api /api
-COPY entrypoint.py /entrypoint.py
+COPY . /app
 
-# Allow scripts in /api/scripts to be executed
-RUN chmod -R +x /api/scripts/
+# Allow scripts to be executed
+RUN chmod -R +x /app/api/scripts/ /app/scripts
 
-# Invalidate the cache from here on.
-# This prevents docker from caching permissions of mounted directories,
-# as those could change on the host at any time.
+# Write builddate to container (this also invalidates the cache from here on)
 ARG BUILDDATE
-ARG CURRENT_UID
-ARG CURRENT_GID
-RUN echo ${BUILDDATE} > /etc/builddate; \
-    # Set directory permissions
-    mkdir -p /backups /logs /var/lib/postgresql/data; \
-    chown ${CURRENT_UID}:${CURRENT_GID} /backups /logs /var/lib/postgresql/data;
+ENV BUILDDATE=$BUILDDATE
+RUN echo ${BUILDDATE} > /etc/builddate;
 
-ENTRYPOINT [ "python", "entrypoint.py" ]
+# Run initialization script (create & own folders)
+RUN /app/scripts/initialize.sh
+
+ENTRYPOINT [ "python", "/app/entrypoint.py" ]
