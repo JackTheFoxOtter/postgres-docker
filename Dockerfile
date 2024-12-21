@@ -1,5 +1,12 @@
 FROM postgres:16-alpine
 
+USER root
+
+# Create appuser and appgroup
+ARG CONTAINER_UID
+ARG CONTAINER_GID
+RUN adduser --uid $CONTAINER_UID --disabled-password appuser
+
 # Install required packages
 RUN apk add --no-cache git python3 py3-pip;
 
@@ -14,14 +21,10 @@ RUN pip install -r /app/api/requirements.txt --break-system-packages;
 COPY . /app
 
 # Allow scripts to be executed
-RUN chmod -R +x /app/api/scripts/ /app/scripts
+RUN chmod -R +x /app/api/scripts/ /app/scripts /app/entrypoint.sh
 
 # Write builddate to container (this also invalidates the cache from here on)
 ARG BUILDDATE
-ENV BUILDDATE=$BUILDDATE
-RUN echo ${BUILDDATE} > /etc/builddate;
+RUN echo $BUILDDATE > /etc/builddate;
 
-# Run initialization script (create & own folders)
-RUN /app/scripts/initialize.sh
-
-ENTRYPOINT [ "python", "/app/entrypoint.py" ]
+ENTRYPOINT [ "/bin/sh", "/app/entrypoint.sh" ]

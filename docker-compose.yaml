@@ -6,7 +6,6 @@ services:
         - "CONTAINER_UID=${CONTAINER_UID:-1000}"
         - "CONTAINER_GID=${CONTAINER_GID:-1000}"
         - "BUILDDATE=${BUILDDATE:-0}"
-    user: ${CONTAINER_UID:-1000}:${CONTAINER_GID:-1000}
     container_name: postgres-postgres
     restart: unless-stopped
     environment:
