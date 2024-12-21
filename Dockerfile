@@ -5,7 +5,8 @@ USER root
 # Create appuser and appgroup
 ARG CONTAINER_UID
 ARG CONTAINER_GID
-RUN adduser --uid $CONTAINER_UID --disabled-password appuser
+RUN addgroup --gid $CONTAINER_GID appgroup && \ 
+    adduser --uid $CONTAINER_UID --disabled-password --ingroup appgroup appuser
 
 # Install required packages
 RUN apk add --no-cache git python3 py3-pip;
