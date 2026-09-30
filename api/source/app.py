@@ -2,12 +2,14 @@
 #------------------------ [Initialize logging] -----------------------#
 #=====================================================================#
 from jtfo.logging import setup_logging
+from sys import version_info
 import logging
 
 # Configure logging. Sets up custom log level 'notice', custom formatters & root logger
 setup_logging(use_colour_if_supported=False) # No need to log to file, supervisor takes care of that
 logging.getLogger("asyncio").setLevel(logging.WARNING)
-# logging.logAsyncioTasks = False # TODO: Available in Python 3.12, so once the alpine package registry upgrades, we can uncomment this!
+if version_info > (3, 12):
+    logging.logAsyncioTasks = False # type: ignore I don't know why the intellisense thinks this doesn't exist.
 
 
 #=====================================================================#
@@ -17,12 +19,11 @@ from source.modules.api_helper import api_method
 from source.env import DEBUG, QUART_SECRET_KEY
 from quart import Quart
 import asyncio
-import logging
 
 
 logger = logging.getLogger('postgres_api')
 logger.level = logging.DEBUG if DEBUG else logging.INFO
-logger.info(f"Starting Postgres API...")
+logger.info("Starting Postgres API...")
 
 # Create and configure quart app
 quart_app = Quart(
@@ -36,10 +37,12 @@ quart_app.config['TESTING'] = False
 quart_app.config['SECRET_KEY'] = QUART_SECRET_KEY
 quart_app.config['EXPLAIN_TEMPLATE_LOADING'] = DEBUG
 
-# Configure event loop
-loop = asyncio.get_event_loop()
-loop.slow_callback_duration = 0.02 if DEBUG else 0.1 # Everything taking longer than 20 ms should be considered slow
-loop.set_debug(DEBUG) # Set asyncio event loop debug mode when launched in debug profile
+@quart_app.before_serving
+async def init():
+    # Configure event loop
+    loop = asyncio.get_event_loop()
+    loop.slow_callback_duration = 0.02 if DEBUG else 0.1 # Everything taking longer than 20 ms should be considered slow
+    loop.set_debug(DEBUG) # Set asyncio event loop debug mode when launched in debug profile
 
 
 #=====================================================================#
@@ -53,13 +56,13 @@ from source.modules.utils import filename_validator
 @quart_app.post("/echo")
 @api_method(sanitize_arguments=False)
 async def echo_post(request_data : dict):
-    return 200, { "input": request_data }
+    return { "input": request_data }, 200
 
 
 @quart_app.get('/backups')
 @api_method()
 async def backups_get(request_data : dict):
-    return 200, { 'backups': get_backups() }
+    return { 'backups': get_backups() }, 200
 
 
 @quart_app.post('/backups')
@@ -102,4 +105,4 @@ async def backups_post(request_data : dict):
         if not success:
             raise InternalServerError("Backup was not restored! This might be super bad!")
 
-    return 200, { 'database': database, 'action': action, 'name': filename }
+    return { 'database': database, 'action': action, 'name': filename }, 200

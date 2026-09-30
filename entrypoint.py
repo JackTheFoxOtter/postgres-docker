@@ -104,12 +104,14 @@ async def execute_subprocess_shell(name : str, command : str, termination_signal
     processes.append(ProcessInfo(process, termination_signal))
 
     await asyncio.gather(
-        log_lines_continuously(name, 'stdout', process.stdout),
-        log_lines_continuously(name, 'stderr', process.stderr)
+        log_lines_continuously(name, 'stdout', process.stdout), # type: ignore because this will always exist, we're creating this process
+        log_lines_continuously(name, 'stderr', process.stderr) # type: ignore because this will always exist, we're creating this process
     )
 
-    await process.wait() # Wait for process to have ended (returncode isn't immediately accessible)
-    return process.returncode
+    # Wait for process to have ended (returncode isn't immediately accessible)
+    await process.wait()
+
+    return process.returncode # type: ignore because we're explicitly waiting for the process to have finished, return code will be available
     
 
 async def start_supervised_process(name : str, command : str, restart : bool = False, critical : bool = True, termination_signal : int = signal.SIGTERM) -> None:
@@ -184,8 +186,9 @@ if __name__ == '__main__':
     logging.info(f"[Supervisor] Registering termination signals...")
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGQUIT, signal_handler)
-    signal.signal(signal.SIGHUP, signal_handler)
+    if sys.platform != "win32":
+        signal.signal(signal.SIGQUIT, signal_handler)
+        signal.signal(signal.SIGHUP, signal_handler)
 
     logging.info(f"[Supervisor] Starting process supervisor...")
     asyncio.run(main())

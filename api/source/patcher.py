@@ -40,7 +40,10 @@ def run_task(
     config.access_log_format = '%(h)s - "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
     config.accesslog = logging.getLogger('hypercorn.access')
     config.errorlog = logging.getLogger('hypercorn.error')
-    config.bind = [f"{host}:{port}"]
+    if host.startswith("unix:") or host.startswith("fd:"):
+        config.bind = [f"{host}"]
+    else:
+        config.bind = [f"{host}:{port}"]
     config.ca_certs = ca_certs
     config.certfile = certfile
     if debug is not None:

@@ -26,7 +26,8 @@ DB_CONN_SYNC = args.database_conn_sync or os.getenv('DB_CONN_SYNC')
 DB_CONN_ASYNC = args.database_conn_async or os.getenv('DB_CONN_ASYNC')
 # Quart constants
 QUART_HOST = args.quart_host or os.getenv('QUART_HOST') or '127.0.0.1'
-QUART_PORT = args.quart_port or int(os.getenv('QUART_PORT')) if os.getenv('QUART_PORT') else None or 5000
+_env_quart_port = os.getenv('QUART_PORT')
+QUART_PORT = args.quart_port or int(_env_quart_port) if _env_quart_port else None or 5000
 QUART_SECRET_KEY = args.quart_secret_key or os.getenv('QUART_SECRET_KEY')
 
 # Environment validation

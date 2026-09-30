@@ -73,9 +73,11 @@ async def execute_subprocess_shell(logger : Logger, name : str, command : str) -
     process = await create_subprocess_shell(command, stdout=PIPE, stderr=PIPE)
     
     await asyncio.gather(
-        log_lines_continuously(logger, name, 'stdout', process.stdout),
-        log_lines_continuously(logger, name, 'stderr', process.stderr)
+        log_lines_continuously(logger, name, 'stdout', process.stdout), # type: ignore because this will always exist, we're creating this process
+        log_lines_continuously(logger, name, 'stderr', process.stderr) # type: ignore because this will always exist, we're creating this process
     )
 
-    await process.wait() # Wait for process to have ended (returncode isn't immediately accessible)
-    return process.returncode
+    # Wait for process to have ended (returncode isn't immediately accessible)
+    await process.wait()
+    
+    return process.returncode # type: ignore because we're explicitly waiting for the process to have finished, return code will be available

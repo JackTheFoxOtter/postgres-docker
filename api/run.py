@@ -34,7 +34,6 @@ elif ENVIRONMENT == 'development':
     quart_app.run(
         host=QUART_HOST,
         port=QUART_PORT,
-        loop=asyncio.get_event_loop(),
         debug=DEBUG
     )
 
