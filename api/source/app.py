@@ -53,19 +53,19 @@ from werkzeug.exceptions import InternalServerError, BadRequest
 from source.modules.utils import filename_validator
 
 
-@quart_app.post("/echo")
+@quart_app.post("/echo") # type: ignore
 @api_method(sanitize_arguments=False)
 async def echo_post(request_data : dict):
-    return { "input": request_data }, 200
+    return 200, { "input": request_data }
 
 
-@quart_app.get('/backups')
+@quart_app.get('/backups') # type: ignore
 @api_method()
 async def backups_get(request_data : dict):
-    return { 'backups': get_backups() }, 200
+    return 200, { 'backups': get_backups() }
 
 
-@quart_app.post('/backups')
+@quart_app.post('/backups') # type: ignore
 @api_method({
     'database': {
         'allowed_types': [ str ],
@@ -105,4 +105,4 @@ async def backups_post(request_data : dict):
         if not success:
             raise InternalServerError("Backup was not restored! This might be super bad!")
 
-    return { 'database': database, 'action': action, 'name': filename }, 200
+    return 200, { 'database': database, 'action': action, 'name': filename }
